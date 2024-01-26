@@ -1,7 +1,6 @@
 package antoniogiovanni.marchese.U5W3L5.service;
 
 import antoniogiovanni.marchese.U5W3L5.exceptions.NotFoundException;
-import antoniogiovanni.marchese.U5W3L5.model.Ruolo;
 import antoniogiovanni.marchese.U5W3L5.model.Utente;
 import antoniogiovanni.marchese.U5W3L5.payloads.NewUtenteDTO;
 import antoniogiovanni.marchese.U5W3L5.repository.UtenteRepository;
@@ -56,5 +55,9 @@ public class UtenteService {
         found.setCognome(utente.cognome());
         found.setRuolo(utente.ruolo());
         return utenteRepository.save(found);
+    }
+
+    public Utente findByEmail(String email) {
+        return utenteRepository.findByEmail(email).orElseThrow(() -> new NotFoundException("Utente con email " + email + " non trovato!"));
     }
 }

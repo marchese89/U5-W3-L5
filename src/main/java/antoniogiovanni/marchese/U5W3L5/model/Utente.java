@@ -24,6 +24,7 @@ public class Utente implements UserDetails {
     private UUID id;
 
     private String email;
+    @JsonIgnore
     private String password;
 
     private String nome;
