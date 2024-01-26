@@ -24,6 +24,8 @@ public class Evento {
     private String luogo;
     @Column(name = "posti_disponibili")
     private int postiDisponibili;
+
+    private String image;
     @ManyToOne
     @JoinColumn(name = "organizzatore_id")
     @JsonIgnore

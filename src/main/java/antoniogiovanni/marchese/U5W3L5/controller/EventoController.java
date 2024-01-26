@@ -9,12 +9,15 @@ import antoniogiovanni.marchese.U5W3L5.payloads.ResponseDTO;
 import antoniogiovanni.marchese.U5W3L5.service.EventoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.UUID;
 
 @RestController
@@ -25,7 +28,7 @@ public class EventoController {
     private EventoService eventoService;
     @GetMapping
     @PreAuthorize("hasAnyAuthority('ORGANIZZATORE_EVENTI','NORMALE')")
-    public Page<Evento> getUsers(@RequestParam(defaultValue = "0") int page,
+    public Page<Evento> getEventi(@RequestParam(defaultValue = "0") int page,
                                  @RequestParam(defaultValue = "10") int size,
                                  @RequestParam(defaultValue = "id") String orderBy) {
         return eventoService.getEventi(page, size, orderBy);
@@ -38,6 +41,7 @@ public class EventoController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('ORGANIZZATORE_EVENTI')")
+    @ResponseStatus(HttpStatus.CREATED)
     public ResponseDTO createEvent( @RequestBody @Validated NewEventoDTO eventoDTO, BindingResult validation,@AuthenticationPrincipal Utente currentUser){
         if (validation.hasErrors()) {
             throw new BadRequestException(validation.getAllErrors().stream().map(err -> err.getDefaultMessage()).toList().toString());
@@ -61,6 +65,7 @@ public class EventoController {
     }
     @DeleteMapping("/{idEvento}")
     @PreAuthorize("hasAuthority('ORGANIZZATORE_EVENTI')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteEvent(@PathVariable UUID idEvento ,@AuthenticationPrincipal Utente currentUser){
 
         Evento found = eventoService.findById(idEvento);
@@ -69,6 +74,16 @@ public class EventoController {
             throw new UnauthorizedException("l'utente corrente non è il creatore dell'evento e non lo può eliminare");
         }
         eventoService.findByIdAndDelete(idEvento);
+    }
+
+    @PatchMapping("/{idEvento}/image")
+    @PreAuthorize("hasAuthority('ORGANIZZATORE_EVENTI')")
+    public Evento uploadAvatar(@RequestParam("image") MultipartFile file, @PathVariable UUID idEvento) {
+        try {
+            return eventoService.uploadImage(idEvento, file);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }
