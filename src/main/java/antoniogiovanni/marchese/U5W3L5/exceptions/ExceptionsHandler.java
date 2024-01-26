@@ -29,7 +29,6 @@ public class ExceptionsHandler {
     @ExceptionHandler(UnauthorizedException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public ErrorsDTO handleUnauthorized(UnauthorizedException ex){
-        System.out.println("entro nel gestore delle eccezioni-------------------------------------------------------");
         return new ErrorsDTO(ex.getMessage(), LocalDateTime.now());
     }
 

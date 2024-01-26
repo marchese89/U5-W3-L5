@@ -1,8 +1,10 @@
 package antoniogiovanni.marchese.U5W3L5.service;
 
 import antoniogiovanni.marchese.U5W3L5.exceptions.NotFoundException;
+import antoniogiovanni.marchese.U5W3L5.exceptions.UnauthorizedException;
 import antoniogiovanni.marchese.U5W3L5.model.Evento;
 import antoniogiovanni.marchese.U5W3L5.model.Prenotazione;
+import antoniogiovanni.marchese.U5W3L5.model.Ruolo;
 import antoniogiovanni.marchese.U5W3L5.model.Utente;
 import antoniogiovanni.marchese.U5W3L5.payloads.NewPrenotazioneDTO;
 import antoniogiovanni.marchese.U5W3L5.repository.PrenotazioneRepository;
@@ -13,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -33,12 +36,24 @@ public class PrenotazioneService {
 
         return prenotazioneRepository.findAll(pageable);
     }
+    public List<Prenotazione> getPrenotazioniByUser(Utente utente) {
 
-    public Prenotazione save(NewPrenotazioneDTO prenotazioneDTO) {
-        Utente utente = utenteService.findById(prenotazioneDTO.idUtente());
+        return prenotazioneRepository.findByUtente(utente);
+    }
+
+    public Prenotazione save(NewPrenotazioneDTO prenotazioneDTO,Utente utente) {
+        Utente foundUtente = utenteService.findById(utente.getId());
         Evento evento = eventoService.findById(prenotazioneDTO.idEvento());
+        //dobbiamo impedire ad un utente di prenotarsi due volte sullo stesso evento
+        //vediamo se già esiste una prenotazione per lo stesso evento e lo stesso utente
+        if(prenotazioneRepository.existsByUtenteAndEvento(foundUtente,evento)){
+            throw new UnauthorizedException("hai già fatto una prenotazione per questo evento, non puoi farne altre");
+        }
+        if(prenotazioneRepository.countByEvento(evento) >= evento.getPostiDisponibili()){
+            throw new UnauthorizedException("l'evento scelto non accetta più prenotazioni");
+        }
         Prenotazione prenotazione = new Prenotazione();
-        prenotazione.setUtente(utente);
+        prenotazione.setUtente(foundUtente);
         prenotazione.setEvento(evento);
         return prenotazioneRepository.save(prenotazione);
     }
@@ -47,17 +62,17 @@ public class PrenotazioneService {
         return prenotazioneRepository.findById(id).orElseThrow(() -> new NotFoundException(id));
     }
 
-    public void findByIdAndDelete(UUID id) {
+    public void findByIdAndDelete(UUID id,Utente utente) {
         Prenotazione found = this.findById(id);
+        //le prenotazioni possono essere cancellate solo da organizzatore e da chi le ha fatte
+        if(!utente.getId().equals(found.getUtente().getId()) || utente.getRuolo() != Ruolo.ORGANIZZATORE_EVENTI){
+            throw new UnauthorizedException("non puoi cancellare prenotazioni che non hai creato se non sei un organizzatore");
+        }
         prenotazioneRepository.delete(found);
     }
 
-    public Prenotazione findByIdAndUpdate(UUID id, NewPrenotazioneDTO prenotazioneDTO) {
-        Prenotazione found = this.findById(id);
-        Utente utente = utenteService.findById(prenotazioneDTO.idUtente());
-        Evento evento = eventoService.findById(prenotazioneDTO.idEvento());
-        found.setUtente(utente);
-        found.setEvento(evento);
-        return prenotazioneRepository.save(found);
+    public Prenotazione findByIdAndUpdate(UUID id, NewPrenotazioneDTO prenotazioneDTO,Utente utente) {
+
+        throw new UnauthorizedException("azione non consetita");
     }
 }
